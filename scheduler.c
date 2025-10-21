@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <limits.h>
 
 struct process {
 	int pid; 
@@ -24,11 +26,11 @@ int compBT(const void* a, const void* b){
 
 
 void print(int n, struct process* processes) {
-//	printf("Gantt Chart: |");
-//	for (int i = 0; i < n; i++) {
-//		printf("  |  P%d", i+1);
-//	}
-	printf("\nPID   AT    BT    WT     TAT     RT\n");
+	printf("Gantt Chart: ");
+	for (int i = 0; i < n; i++) { // make spaces according to burst time, a space per time
+		printf("  |  P%d", processes[i].pid);
+	}
+	printf("\nPID   AT    BT    WT    TAT   RT\n");
 	float sumWT = 0;
 	float sumTAT = 0;
 	float sumRT = 0;
@@ -54,6 +56,39 @@ void fcfs(struct process* processes, int n) {
 	}
 }
 
+void sjf(struct process* processes, int n) {
+	int current_time = 0;
+	int count = 0;
+	struct process schedule[n];
+	bool scheduled[n];
+
+	while (count < n) {
+		int shortest = INT_MAX;
+		int chosen = -1; // -1 as a flag for no processes to schedule
+		for (int j = 0; j < n; j++) { // to loop through all the processes and find all those available at that time
+			if (scheduled[j] == false && processes[j].arrival_time <= current_time && processes[j].burst_time < shortest) {
+				shortest = processes[j].burst_time;
+				chosen = j;
+			}
+		}
+		if (chosen == -1) {
+			current_time++;
+		} else {
+			scheduled[chosen] = true;
+			schedule[chosen] = processes[chosen];
+			current_time += processes[chosen].burst_time;
+			count++;
+		}
+	}
+
+	for (int i = 1; i < n; i++) {
+		schedule[i].waiting_time = schedule[i-1].waiting_time + schedule[i-1].burst_time + schedule[i-1].arrival_time - schedule[i].arrival_time;
+		schedule[i].response_time = schedule[i].waiting_time;
+		schedule[i].turnaround_time = schedule[i].waiting_time + schedule[i].burst_time;
+		processes[i] = schedule[i];
+	}
+}
+
 int main() {
 	int n;
 	printf("Enter the number of processes: ");
@@ -66,7 +101,7 @@ int main() {
 		scanf("%d %d", &processes[i].arrival_time, &processes[i].burst_time);
 	}
 
-	fcfs(processes, n);
+	sjf(processes, n);
 
 	print(n, processes);
 	return 0;
