@@ -25,17 +25,29 @@ int compBT(const void* a, const void* b){
 }
 
 
-void print(int n, struct process* processes) {
-	printf("Gantt Chart: ");
+void print(int n, struct process* processes, int sched) {
+	if (sched == 0) {
+		printf("=== Shortest Job First (SJF) ===\n");
+	} else if (sched == 1) {
+		printf("=== First Come First Served (FCFS) ===\n");
+	}
+	printf("Gantt Chart: |");
 	for (int i = 0; i < n; i++) { // make spaces according to burst time, a space per time
-		printf("  |  P%d", processes[i].pid);
+		for(int j = 0; j < processes[i].burst_time; j++) {
+			printf(" ");
+		}
+		printf("P%d", processes[i].pid);
+		for (int j = 0; j < processes[i].burst_time; j++) {
+			printf(" ");
+		}
+		printf("|");
 	}
 	printf("\nPID   AT    BT    WT    TAT   RT\n");
 	float sumWT = 0;
 	float sumTAT = 0;
 	float sumRT = 0;
 	for (int i = 0; i < n; i++) {
-		printf("%-5d %-5d %-5d %-5d %-5d %-5d", processes[i].pid, processes[i].arrival_time, processes[i].burst_time, processes[i].turnaround_time, processes[i].waiting_time, processes[i].response_time);
+		printf("%-5d %-5d %-5d %-5d %-5d %-5d", processes[i].pid, processes[i].arrival_time, processes[i].burst_time, processes[i].waiting_time, processes[i].turnaround_time, processes[i].response_time);
 		printf("\n");
 		sumWT += processes[i].waiting_time;
 		sumTAT += processes[i].turnaround_time;
@@ -61,6 +73,9 @@ void sjf(struct process* processes, int n) {
 	int count = 0;
 	struct process schedule[n];
 	bool scheduled[n];
+	for(int i = 0;i < n; i++){
+		scheduled[i] = false;
+	}
 
 	while (count < n) {
 		int shortest = INT_MAX;
@@ -75,16 +90,20 @@ void sjf(struct process* processes, int n) {
 			current_time++;
 		} else {
 			scheduled[chosen] = true;
-			schedule[chosen] = processes[chosen];
+			schedule[count] = processes[chosen];
 			current_time += processes[chosen].burst_time;
 			count++;
 		}
 	}
-
+	schedule[0].waiting_time = 0;
+	schedule[0].response_time = 0;
+	schedule[0].turnaround_time = schedule[0].burst_time;
 	for (int i = 1; i < n; i++) {
 		schedule[i].waiting_time = schedule[i-1].waiting_time + schedule[i-1].burst_time + schedule[i-1].arrival_time - schedule[i].arrival_time;
 		schedule[i].response_time = schedule[i].waiting_time;
 		schedule[i].turnaround_time = schedule[i].waiting_time + schedule[i].burst_time;
+	}
+	for (int i = 0; i < n; i++) {
 		processes[i] = schedule[i];
 	}
 }
@@ -101,8 +120,9 @@ int main() {
 		scanf("%d %d", &processes[i].arrival_time, &processes[i].burst_time);
 	}
 
-	sjf(processes, n);
+	//sjf(processes, n);
+	fcfs(processes,n);
 
-	print(n, processes);
+	print(n, processes, 1); // 0 as a flag for sjf and 1 for fcfs;
 	return 0;
 }
